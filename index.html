@@ -2,8 +2,71 @@
 <head>
     <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <style>
+        /* Style the body */
+        body{
+            font-family: Arial, Helvetica;
+            margin: 3;
+        }
+
+        /* Header / logo title */ 
+        .header{
+            padding: 2px;
+            text-align: center;
+            background: #333;
+            color: white;
+            font-size: 14px;
+        }
+
+        .navbar {
+            overflow:hidden;
+            background-color: #333;
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            z-index: 9999;
+        }
+
+        .navbar a {
+            float: left;
+            display: block;
+            color: #f2f2f2;
+            text-align: center;
+            padding: 14px 16px;
+            text-decoration: none;
+            font-size: 17px;
+        }
+
+        .navbar a:hover{
+            background: #f1f1f1;
+            color: black;
+        }
+        
+        .navbar a.active {
+            background-color: #04AA6D;
+            color: white;
+        }
+
+    </style>
 </head>
+
 <body>
+    <div class="header">
+        <h1> OSGEO PROJECT </h1>
+        <p>Designed by Team 8</p>
+        <p>Fevzican KARAKUŞ Güven TANRIKULU Furkan GÜL</p>
+    </div>
+
+    <div class="navbar" >
+        <a href="https://team8-osgeo.herokuapp.com/" class="active">Home</a>
+        <a href="https://github.com/GMT-352/osgeo-team-8"  target="_blank" >Team</a>
+        <a href="#tutorial">Reference</a>
+        <a href="#contact">Contact</a>
+    </div>
+
+
     <div id="mapdiv"></div>
     <script src="http://www.openlayers.org/api/OpenLayers.js"></script>
     <script src="http://code.jquery.com/jquery-2.1.1.min.js"></script>
@@ -20,10 +83,18 @@
 
             var point;
             var length=data.length;
-            //TODO - data haritaya ekleme işlemi
+            var vectorLayer = new OpenLayers.Layer.Vector("Overlay");
+            //Adding data to map 
             for (point = 0; point < data.length; point++) {
             var lon=data[point].longitude;
             var lat=data[point].latitude;
+            var typ=data[point].p_type;
+            var type = data[point].p_type;
+            var name = data[point].park_name;
+            var photo = data[point].pht;
+
+            epsg4326 =  new OpenLayers.Projection("EPSG:4326"); //WGS 1984 projection
+            projectTo = map.getProjectionObject(); //The map projection (Spherical Mercator)
 
             var lonLat = new OpenLayers.LonLat(lon,lat ).transform(new OpenLayers.Projection("EPSG:4326"), // transform from WGS 1984
                                                                 map.getProjectionObject() // to Spherical Mercator Projection
@@ -33,9 +104,50 @@
             var markers = new OpenLayers.Layer.Markers( "Markers" );
             map.addLayer(markers)
                 
-            markers.addMarker(new OpenLayers.Marker(lonLat))
+            
                 
-            map.setCenter (lonLat, zoom)
+            map.setCenter (lonLat, zoom);
+            
+            // Define markers as "features" of the vector layer:
+            var feature = new OpenLayers.Feature.Vector(
+                    new OpenLayers.Geometry.Point(lon,lat ).transform(epsg4326, projectTo),
+                    {description:'<strong>Latitude: </strong>'+lat+ "<br> <strong> Longitude: </strong>" +lon+ "<br> <strong>Park Name : </strong>" +name+ "<br> <strong> Park Type: </strong>"+typ+` <p><b class="text">Park Photo: </b> <br> <img src="https://github.com/f-karakus/osGeo_team8/blob/main/cdn/${photo}?raw=true" style='width:300px;height:auto'></p>`},
+                    
+                    {externalGraphic: src ='https://github.com/f-karakus/osGeo_team8/blob/main/cdn/park.png?raw=true', graphicHeight: 30, graphicWidth: 30, graphicXOffset:-12, graphicYOffset:-25  }
+                );    
+            vectorLayer.addFeatures(feature);
+            
+
+          
+            map.addLayer(vectorLayer);
+        
+            
+            //Add a selector control to the vectorLayer with popup functions
+            var controls = {
+              selector: new OpenLayers.Control.SelectFeature(vectorLayer, { onSelect: createPopup, onUnselect: destroyPopup })
+            };
+
+            function createPopup(feature) {
+              feature.popup = new OpenLayers.Popup.FramedCloud("pop",
+                  feature.geometry.getBounds().getCenterLonLat(),
+                  null,
+                  '<div class="markerContent">'+feature.attributes.description+'</div>',
+                  null,
+                  true,
+                  function() { controls['selector'].unselectAll(); }
+              );
+              //feature.popup.closeOnMove = true;
+              map.addPopup(feature.popup);
+            }
+
+            function destroyPopup(feature) {
+              feature.popup.destroy();
+              feature.popup = null;
+            }
+            
+            map.addControl(controls['selector']);
+            controls['selector'].activate();
+
             }
         });
     </script>
