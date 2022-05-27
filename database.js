@@ -17,7 +17,7 @@ var options = {
 };
 
 function getAllLocations(cb) {
-      DATABASE_PGB.any('SELECT ST_X(park_loc) as longitude, ST_Y(park_loc) as latitude from park_ankara')
+      DATABASE_PGB.any('SELECT ST_X(park_loc) as longitude, ST_Y(park_loc) as latitude, park_name, "Photo" as pht, p_type from park_ankara')
       .then(function (data) {
          cb(null, data);})
        .catch(function (err) {
